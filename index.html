@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic Tac Toe</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a2e;
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 16px;
+      letter-spacing: 2px;
+      color: #e0e0e0;
+    }
+
+    .scoreboard {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 24px;
+    }
+
+    .score-box {
+      text-align: center;
+      background: #16213e;
+      border-radius: 12px;
+      padding: 10px 24px;
+      min-width: 80px;
+    }
+
+    .score-box .label {
+      font-size: 0.8rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .score-box .value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .score-box.x .value  { color: #dc4646; }
+    .score-box.draw .value { color: #888; }
+    .score-box.o .value  { color: #4682d4; }
+
+    .status {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      height: 32px;
+      color: #ccc;
+      transition: color 0.3s;
+    }
+
+    .status.win  { color: #50c878; font-weight: bold; font-size: 1.4rem; }
+    .status.draw { color: #888;    font-weight: bold; font-size: 1.4rem; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      grid-template-rows: repeat(3, 120px);
+      gap: 8px;
+    }
+
+    .cell {
+      background: #16213e;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      font-size: 3.5rem;
+      font-weight: bold;
+      user-select: none;
+    }
+
+    .cell:hover:not(.taken) {
+      background: #0f3460;
+      transform: scale(1.04);
+    }
+
+    .cell.taken { cursor: default; }
+
+    .cell.x { color: #dc4646; }
+    .cell.o { color: #4682d4; }
+    .cell.win-cell { background: #1a4a2e; color: #50c878 !important; }
+
+    button#new-game {
+      margin-top: 28px;
+      padding: 12px 40px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: #4682d4;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button#new-game:hover {
+      background: #3366bb;
+      transform: scale(1.04);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Tic Tac Toe</h1>
+
+  <div class="scoreboard">
+    <div class="score-box x">
+      <div class="label">X</div>
+      <div class="value" id="score-x">0</div>
+    </div>
+    <div class="score-box draw">
+      <div class="label">Draw</div>
+      <div class="value" id="score-draw">0</div>
+    </div>
+    <div class="score-box o">
+      <div class="label">O</div>
+      <div class="value" id="score-o">0</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">Player X's Turn</div>
+
+  <div class="board" id="board">
+    <div class="cell" data-i="0"></div>
+    <div class="cell" data-i="1"></div>
+    <div class="cell" data-i="2"></div>
+    <div class="cell" data-i="3"></div>
+    <div class="cell" data-i="4"></div>
+    <div class="cell" data-i="5"></div>
+    <div class="cell" data-i="6"></div>
+    <div class="cell" data-i="7"></div>
+    <div class="cell" data-i="8"></div>
+  </div>
+
+  <button id="new-game">New Game</button>
+
+  <script>
+    const WINS = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    let board = Array(9).fill("");
+    let current = "X";
+    let gameOver = false;
+    let scores = { X: 0, O: 0, Draw: 0 };
+
+    const cells    = document.querySelectorAll(".cell");
+    const status   = document.getElementById("status");
+    const scoreX   = document.getElementById("score-x");
+    const scoreO   = document.getElementById("score-o");
+    const scoreDraw= document.getElementById("score-draw");
+
+    function checkWinner() {
+      for (const [a, b, c] of WINS) {
+        if (board[a] && board[a] === board[b] && board[b] === board[c])
+          return { winner: board[a], combo: [a, b, c] };
+      }
+      if (board.every(c => c !== "")) return { winner: "Draw", combo: [] };
+      return null;
+    }
+
+    function handleClick(i) {
+      if (gameOver || board[i]) return;
+
+      board[i] = current;
+      cells[i].textContent = current;
+      cells[i].classList.add("taken", current.toLowerCase());
+
+      const result = checkWinner();
+      if (result) {
+        gameOver = true;
+        scores[result.winner]++;
+        updateScores();
+
+        if (result.winner === "Draw") {
+          status.textContent = "It's a Draw!";
+          status.className = "status draw";
+        } else {
+          result.combo.forEach(idx => cells[idx].classList.add("win-cell"));
+          status.textContent = `Player ${result.winner} Wins! 🎉`;
+          status.className = "status win";
+        }
+      } else {
+        current = current === "X" ? "O" : "X";
+        status.textContent = `Player ${current}'s Turn`;
+      }
+    }
+
+    function updateScores() {
+      scoreX.textContent    = scores.X;
+      scoreO.textContent    = scores.O;
+      scoreDraw.textContent = scores.Draw;
+    }
+
+    function resetBoard() {
+      board = Array(9).fill("");
+      current = "X";
+      gameOver = false;
+      cells.forEach(c => {
+        c.textContent = "";
+        c.className = "cell";
+      });
+      status.textContent = "Player X's Turn";
+      status.className = "status";
+    }
+
+    cells.forEach(cell => {
+      cell.addEventListener("click", () => handleClick(+cell.dataset.i));
+    });
+
+    document.getElementById("new-game").addEventListener("click", resetBoard);
+  </script>
+</body>
+</html>
